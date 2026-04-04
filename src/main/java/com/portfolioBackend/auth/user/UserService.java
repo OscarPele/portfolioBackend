@@ -50,6 +50,7 @@ public class UserService {
         return user;
     }
 
+    @SuppressWarnings("null")
     @Transactional(readOnly = true)
     public User requireById(Long id) {
         return userRepo.findById(id)

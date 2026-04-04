@@ -24,6 +24,7 @@ public class GmailMailSender implements MailSenderPort {
         this.replyTo = replyTo == null ? "" : replyTo;
     }
 
+    @SuppressWarnings("null")
     @Override
     public void send(String to, String subject, String htmlBody) {
         try {
