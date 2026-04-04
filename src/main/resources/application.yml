@@ -1,4 +1,6 @@
 spring:
+  config:
+    import: optional:file:.env[.properties]
   datasource:
     url: jdbc:postgresql://localhost:5432/portfolioBackend_DB
     username: ${DB_USER:}
@@ -21,9 +23,12 @@ spring:
     username: ${MAIL_USERNAME:}
     password: ${MAIL_PASSWORD:}
     properties:
-      mail.smtp.auth: true
-      mail.smtp.starttls.enable: true
-      mail.smtp.starttls.required: true
+      "[mail.smtp.auth]": true
+      "[mail.smtp.starttls.enable]": true
+      "[mail.smtp.starttls.required]": true
+      "[mail.smtp.connectiontimeout]": 5000
+      "[mail.smtp.timeout]": 5000
+      "[mail.smtp.writetimeout]": 5000
 
 security:
   permit-all: /auth/login,/auth/register,/auth/forgot-password,/auth/reset-password,/auth/verify-email,/auth/verify-email/request,/actuator/health,/actuator/info
@@ -31,6 +36,14 @@ security:
 app:
   jwt:
     secret: ${APP_JWT_SECRET}
+  deepseek:
+    api-key: ${APP_DEEPSEEK_API_KEY:}
+    base-url: ${APP_DEEPSEEK_BASE_URL:https://api.deepseek.com}
+    model: ${APP_DEEPSEEK_MODEL:deepseek-chat}
   mail:
     from: ${MAIL_FROM:${MAIL_USERNAME}}
     replyTo: ${MAIL_REPLY_TO:}
+  verify-email:
+    backend-verify-url: ${APP_VERIFY_EMAIL_BACKEND_URL:http://localhost:8080/auth/verify-email}
+    frontend-success-url: ${APP_VERIFY_EMAIL_SUCCESS_URL:http://localhost:3000/demos/1?emailVerified=1}
+    frontend-error-url: ${APP_VERIFY_EMAIL_ERROR_URL:http://localhost:3000/demos/1?emailVerifyError=1}

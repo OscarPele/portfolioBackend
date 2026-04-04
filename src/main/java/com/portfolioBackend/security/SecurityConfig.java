@@ -41,12 +41,12 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                // Usa el bean corsConfigurationSource() de abajo
                 .cors(Customizer.withDefaults())
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> {
-                    auth.requestMatchers("/ws/**").permitAll(); // handshake WebSocket
+                    auth.requestMatchers("/ws/**").permitAll();
+                    auth.requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll();
                     if (permitAll.length > 0) {
                         auth.requestMatchers(permitAll).permitAll();
                     }
@@ -62,25 +62,19 @@ public class SecurityConfig {
         return http.build();
     }
 
-    /**
-     * Configuración CORS centralizada para que Spring Security responda
-     * correctamente a los preflight (OPTIONS) y a las peticiones CORS.
-     */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration cfg = new CorsConfiguration();
 
-        // Cuando allowCredentials=true no se puede usar "*" en allowedOrigins.
-        // Para IPs locales, usa patrones con allowedOriginPatterns.
         cfg.setAllowedOrigins(List.of(
                 "http://localhost:5173",
                 "http://127.0.0.1:5173",
-                "https://opsimulator.com",
-                "https://www.opsimulator.com"
+                "http://localhost:3000",
+                "http://127.0.0.1:3000"
         ));
-        // Patrones para redes locales (añade tu IP si cambias de host)
         cfg.setAllowedOriginPatterns(List.of(
-                "http://192.168.*.*:5173"
+                "http://192.168.*.*:5173",
+                "http://192.168.*.*:3000"
         ));
 
         cfg.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));

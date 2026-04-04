@@ -36,7 +36,11 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody Map<String, String> body) {
         var user = userService.register(body.get("username"), body.get("email"), body.get("password"));
-        emailVerificationService.send(user);
+        try {
+            emailVerificationService.send(user);
+        } catch (Exception e) {
+            System.err.println("[AuthController] Error enviando email de verificacion: " + e.getMessage());
+        }
         return ResponseEntity.ok(Map.of(
                 "id", user.getId(),
                 "username", user.getUsername(),

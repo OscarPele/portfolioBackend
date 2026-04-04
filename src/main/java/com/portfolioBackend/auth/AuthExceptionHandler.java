@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.util.Map;
 
-@RestControllerAdvice(basePackages = "com.hs.site.auth")
+@RestControllerAdvice(basePackages = "com.portfolioBackend")
 public class AuthExceptionHandler {
 
     @ExceptionHandler(RuntimeException.class)
@@ -17,7 +17,8 @@ public class AuthExceptionHandler {
         HttpStatus status = switch (code) {
             case "USERNAME_EXISTS", "EMAIL_EXISTS", "VALIDATION_ERROR" -> HttpStatus.BAD_REQUEST;   // 400
             case "INVALID_CREDENTIALS", "EMAIL_NOT_VERIFIED" -> HttpStatus.UNAUTHORIZED;           // 401
-            case "USER_NOT_FOUND" -> HttpStatus.NOT_FOUND;                                         // 404
+            case "USER_NOT_FOUND", "TASK_NOT_FOUND" -> HttpStatus.NOT_FOUND;                        // 404
+            case "FORBIDDEN" -> HttpStatus.FORBIDDEN;                                              // 403
             case "CURRENT_PASSWORD_INCORRECT" -> HttpStatus.BAD_REQUEST;                           // 400
             case "INVALID_REFRESH_TOKEN", "REFRESH_TOKEN_EXPIRED_OR_REVOKED" -> HttpStatus.UNAUTHORIZED; // 401
             default -> HttpStatus.INTERNAL_SERVER_ERROR;                                           // 500

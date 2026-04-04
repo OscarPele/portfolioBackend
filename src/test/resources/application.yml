@@ -1,0 +1,39 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  h2:
+    console:
+      enabled: true
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate.default_schema: portfolioBackend_schema
+      hibernate.hbm2ddl.create_namespaces: true
+    open-in-view: false
+    show-sql: false
+  mail:
+    host: localhost
+    port: 3025
+
+app:
+  jwt:
+    secret: dGVzdC1zZWNyZXQta2V5LWZvci10ZXN0aW5nLW9ubHktZG8tbm90LXVzZS1pbi1wcm9kdWN0aW9uLTEyMzQ1Njc4OTA=
+    issuer: test-issuer
+    expiration-seconds: 3600
+  mail:
+    from: test@example.com
+    replyTo: reply@example.com
+  verify-email:
+    ttl-hours: 24
+    backend-verify-url: http://localhost:8080/auth/verify-email
+    frontend-success-url: http://localhost:3000/verified
+    frontend-error-url: http://localhost:3000/verify-error
+  password-reset:
+    expiration-minutes: 30
+
+
