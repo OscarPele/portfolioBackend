@@ -2,12 +2,12 @@ package com.portfolioBackend.AIChat.DeepSeek;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.portfolioBackend.AIChat.model.ChatMessage;
+import com.portfolioBackend.AIChat.text.AssistantTextSanitizer;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -21,19 +21,28 @@ public class DeepSeekChatClient {
     private static final String FALLBACK_ERROR_MESSAGE =
             "Placeholder: DeepSeek no pudo generar respuesta en este momento. Mas adelante afinaremos el prompt y el manejo de errores.";
 
+    private static final String FOLLOW_UP_CTA =
+            "\n\nSi quieres hablar directamente con Oscar, puedes seguir escribiendo en este chat y esperar a que responda personalmente. Si lo prefieres, tambien puedes escribirle a oscarpelegrina99@gmail.com. Si quieres, puedes preguntarme algo mas concreto sobre Oscar o pedirme que te cuente otra parte interesante de su perfil.";
+
     private final ObjectMapper objectMapper;
     private final HttpClient httpClient;
+    private final DeepSeekPromptProvider deepSeekPromptProvider;
+    private final AssistantTextSanitizer assistantTextSanitizer;
     private final String apiKey;
     private final String baseUrl;
     private final String model;
 
     public DeepSeekChatClient(
             ObjectMapper objectMapper,
+            DeepSeekPromptProvider deepSeekPromptProvider,
+            AssistantTextSanitizer assistantTextSanitizer,
             @Value("${app.deepseek.api-key:}") String apiKey,
             @Value("${app.deepseek.base-url:https://api.deepseek.com}") String baseUrl,
             @Value("${app.deepseek.model:deepseek-chat}") String model
     ) {
         this.objectMapper = objectMapper;
+        this.deepSeekPromptProvider = deepSeekPromptProvider;
+        this.assistantTextSanitizer = assistantTextSanitizer;
         this.httpClient = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(10))
                 .build();
@@ -44,13 +53,13 @@ public class DeepSeekChatClient {
 
     public String generateAssistantReply(List<ChatMessage> conversationMessages) {
         if (apiKey == null || apiKey.isBlank()) {
-            return MISSING_API_KEY_MESSAGE;
+            return appendFollowUpCta(MISSING_API_KEY_MESSAGE);
         }
 
         try {
             DeepSeekChatCompletionRequest payload = new DeepSeekChatCompletionRequest(
                     model,
-                    mapConversation(conversationMessages),
+                    deepSeekPromptProvider.buildMessages(conversationMessages),
                     false
             );
 
@@ -64,7 +73,7 @@ public class DeepSeekChatClient {
 
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
-                return FALLBACK_ERROR_MESSAGE;
+                return appendFollowUpCta(FALLBACK_ERROR_MESSAGE);
             }
 
             DeepSeekChatCompletionResponse completionResponse = objectMapper.readValue(
@@ -73,39 +82,21 @@ public class DeepSeekChatClient {
             );
 
             if (completionResponse.choices() == null || completionResponse.choices().isEmpty()) {
-                return FALLBACK_ERROR_MESSAGE;
+                return appendFollowUpCta(FALLBACK_ERROR_MESSAGE);
             }
 
             DeepSeekChatCompletionResponse.Message message = completionResponse.choices().getFirst().message();
             if (message == null || message.content() == null || message.content().isBlank()) {
-                return FALLBACK_ERROR_MESSAGE;
+                return appendFollowUpCta(FALLBACK_ERROR_MESSAGE);
             }
 
-            return message.content().trim();
+            return appendFollowUpCta(assistantTextSanitizer.sanitize(message.content()));
         } catch (Exception exception) {
-            return FALLBACK_ERROR_MESSAGE;
+            return appendFollowUpCta(FALLBACK_ERROR_MESSAGE);
         }
     }
 
-    private List<DeepSeekChatMessage> mapConversation(List<ChatMessage> conversationMessages) {
-        List<DeepSeekChatMessage> mappedMessages = new ArrayList<>();
-
-        for (ChatMessage message : conversationMessages) {
-            mappedMessages.add(new DeepSeekChatMessage(resolveRole(message), message.text()));
-        }
-
-        return mappedMessages;
-    }
-
-    private String resolveRole(ChatMessage message) {
-        if ("assistant".equalsIgnoreCase(message.authorType())) {
-            return "assistant";
-        }
-
-        if ("oscar".equalsIgnoreCase(message.authorUsername())) {
-            return "assistant";
-        }
-
-        return "user";
+    private String appendFollowUpCta(String content) {
+        return content.strip() + FOLLOW_UP_CTA;
     }
 }

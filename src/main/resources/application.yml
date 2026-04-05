@@ -43,6 +43,8 @@ app:
   mail:
     from: ${MAIL_FROM:${MAIL_USERNAME}}
     replyTo: ${MAIL_REPLY_TO:}
+  notifications:
+    owner-email: ${APP_OWNER_NOTIFICATION_EMAIL:oscarpear99@gmail.com}
   verify-email:
     backend-verify-url: ${APP_VERIFY_EMAIL_BACKEND_URL:http://localhost:8080/auth/verify-email}
     frontend-success-url: ${APP_VERIFY_EMAIL_SUCCESS_URL:http://localhost:3000/demos/1?emailVerified=1}

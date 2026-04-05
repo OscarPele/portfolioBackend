@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.*;
 import com.portfolioBackend.auth.password.PasswordResetService;
 import com.portfolioBackend.auth.user.UserService;
 import com.portfolioBackend.auth.verification.EmailVerificationService;
+import com.portfolioBackend.notifications.OwnerAlertService;
 import com.portfolioBackend.security.JWTService;
 
 import static com.portfolioBackend.security.JwtUtils.getUid;
@@ -21,15 +22,18 @@ public class AuthController {
     private final UserService userService;
     private final PasswordResetService passwordResetService;
     private final EmailVerificationService emailVerificationService;
+    private final OwnerAlertService ownerAlertService;
     private final JWTService jwtService;
 
     public AuthController(UserService userService,
                           PasswordResetService passwordResetService,
                           EmailVerificationService emailVerificationService,
+                          OwnerAlertService ownerAlertService,
                           JWTService jwtService) {
         this.userService = userService;
         this.passwordResetService = passwordResetService;
         this.emailVerificationService = emailVerificationService;
+        this.ownerAlertService = ownerAlertService;
         this.jwtService = jwtService;
     }
 
@@ -41,6 +45,7 @@ public class AuthController {
         } catch (Exception e) {
             System.err.println("[AuthController] Error enviando email de verificacion: " + e.getMessage());
         }
+        ownerAlertService.notifyNewRegistration(user);
         return ResponseEntity.ok(Map.of(
                 "id", user.getId(),
                 "username", user.getUsername(),

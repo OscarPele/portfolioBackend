@@ -21,6 +21,24 @@ public final class ChatConversation {
         this.participant = participant;
     }
 
+    public ChatConversation(
+            String id,
+            AuthenticatedChatUser participant,
+            List<ChatMessage> initialMessages,
+            int unreadForOscar,
+            int unreadForUser,
+            Instant lastMessageAt
+    ) {
+        this.id = id;
+        this.participant = participant;
+        this.messages.addAll(initialMessages);
+        this.unreadForOscar.set(Math.max(unreadForOscar, 0));
+        this.unreadForUser.set(Math.max(unreadForUser, 0));
+        this.lastMessageAt = lastMessageAt != null
+                ? lastMessageAt
+                : (initialMessages.isEmpty() ? null : initialMessages.getLast().sentAt());
+    }
+
     public String id() {
         return id;
     }
@@ -74,5 +92,13 @@ public final class ChatConversation {
 
     public void incrementUnreadForUser() {
         unreadForUser.incrementAndGet();
+    }
+
+    public int unreadForOscar() {
+        return unreadForOscar.get();
+    }
+
+    public int unreadForUser() {
+        return unreadForUser.get();
     }
 }

@@ -8,6 +8,11 @@ import com.portfolioBackend.AIChat.dto.ChatConversationSummaryDto;
 import com.portfolioBackend.AIChat.dto.ChatMessageDto;
 import com.portfolioBackend.AIChat.model.ChatConversation;
 import com.portfolioBackend.AIChat.model.ChatMessage;
+import com.portfolioBackend.AIChat.persistence.ChatConversationEntity;
+import com.portfolioBackend.AIChat.persistence.ChatConversationRepository;
+import com.portfolioBackend.AIChat.persistence.StoredChatMessageEmbeddable;
+import com.portfolioBackend.AIChat.text.AssistantTextSanitizer;
+import com.portfolioBackend.notifications.OwnerAlertService;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -27,20 +32,40 @@ import org.springframework.web.socket.WebSocketSession;
 @Service
 public class AIChatService {
 
+    private static final String INITIAL_GREETING = """
+            Hola, soy la IA de Oscar.
+
+            Puedes preguntarme algo concreto sobre su perfil, sus proyectos, su stack o su forma de trabajar. Si prefieres, tambien puedo contarte algo interesante sobre el.
+
+            Si quieres hablar directamente con Oscar, puedes dejar tu mensaje en este chat y esperar a que responda personalmente, o escribirle a oscarpelegrina99@gmail.com.
+            """;
+
     private final ObjectMapper objectMapper;
     private final DeepSeekChatClient deepSeekChatClient;
+    private final OwnerAlertService ownerAlertService;
+    private final ChatConversationRepository chatConversationRepository;
+    private final AssistantTextSanitizer assistantTextSanitizer;
 
     private final Map<String, ChatConversation> conversations = new ConcurrentHashMap<>();
     private final Map<String, SessionContext> sessions = new ConcurrentHashMap<>();
 
-    public AIChatService(ObjectMapper objectMapper, DeepSeekChatClient deepSeekChatClient) {
+    public AIChatService(
+            ObjectMapper objectMapper,
+            DeepSeekChatClient deepSeekChatClient,
+            OwnerAlertService ownerAlertService,
+            ChatConversationRepository chatConversationRepository,
+            AssistantTextSanitizer assistantTextSanitizer
+    ) {
         this.objectMapper = objectMapper;
         this.deepSeekChatClient = deepSeekChatClient;
+        this.ownerAlertService = ownerAlertService;
+        this.chatConversationRepository = chatConversationRepository;
+        this.assistantTextSanitizer = assistantTextSanitizer;
     }
 
     public List<ChatConversationSummaryDto> getConversationsFor(AuthenticatedChatUser viewer) {
         if (viewer.isOscar()) {
-            return conversations.values().stream()
+            return loadPersistedConversations().stream()
                     .sorted((left, right) -> compareInstants(right.lastMessageAt(), left.lastMessageAt()))
                     .map(conversation -> toSummaryDto(conversation, viewer))
                     .toList();
@@ -84,7 +109,10 @@ public class AIChatService {
             return;
         }
 
-        conversation.clearUnreadFor(user);
+        synchronized (conversation) {
+            conversation.clearUnreadFor(user);
+            persistConversation(conversation);
+        }
         sendConversationHistory(session, conversation);
         sendConversationListToViewer(user);
     }
@@ -114,32 +142,45 @@ public class AIChatService {
             return;
         }
 
-        ChatMessage humanMessage = createHumanMessage(conversation.id(), sender, text);
-        conversation.addMessage(humanMessage);
+        ChatMessage humanMessage;
+        synchronized (conversation) {
+            humanMessage = createHumanMessage(conversation.id(), sender, text);
+            conversation.addMessage(humanMessage);
 
-        if (sender.isOscar()) {
-            conversation.incrementUnreadForUser();
-        } else {
-            conversation.incrementUnreadForOscar();
+            if (sender.isOscar()) {
+                conversation.incrementUnreadForUser();
+            } else {
+                conversation.incrementUnreadForOscar();
+            }
+
+            persistConversation(conversation);
         }
 
         broadcastMessageCreated(conversation, humanMessage);
         broadcastConversationLists(conversation);
 
         if (!sender.isOscar()) {
+            ownerAlertService.notifyChatMessage(sender.uid(), text);
             scheduleAssistantReply(conversation);
         }
     }
 
     private void scheduleAssistantReply(ChatConversation conversation) {
-        List<ChatMessage> contextSnapshot = conversation.snapshotMessages();
+        List<ChatMessage> contextSnapshot;
+        synchronized (conversation) {
+            contextSnapshot = conversation.snapshotMessages();
+        }
         broadcastAssistantPending(conversation);
 
         CompletableFuture.runAsync(() -> {
             String assistantText = deepSeekChatClient.generateAssistantReply(contextSnapshot);
-            ChatMessage assistantMessage = createAssistantMessage(conversation.id(), assistantText);
-            conversation.addMessage(assistantMessage);
-            conversation.incrementUnreadForUser();
+            ChatMessage assistantMessage;
+            synchronized (conversation) {
+                assistantMessage = createAssistantMessage(conversation.id(), assistantText);
+                conversation.addMessage(assistantMessage);
+                conversation.incrementUnreadForUser();
+                persistConversation(conversation);
+            }
             broadcastMessageCreated(conversation, assistantMessage);
             broadcastConversationLists(conversation);
         }, CompletableFuture.delayedExecutor(250, TimeUnit.MILLISECONDS))
@@ -148,10 +189,7 @@ public class AIChatService {
 
     private ChatConversation ensureConversationFor(AuthenticatedChatUser user) {
         String conversationId = buildConversationId(user.uid());
-        return conversations.computeIfAbsent(
-                conversationId,
-                ignored -> new ChatConversation(conversationId, user)
-        );
+        return conversations.computeIfAbsent(conversationId, ignored -> loadOrCreateConversation(conversationId, user));
     }
 
     private ChatConversation resolveConversation(AuthenticatedChatUser viewer, String conversationId) {
@@ -164,6 +202,11 @@ public class AIChatService {
         }
 
         ChatConversation conversation = conversations.get(conversationId);
+        if (conversation == null) {
+            conversation = chatConversationRepository.findById(conversationId)
+                    .map(entity -> conversations.computeIfAbsent(conversationId, ignored -> toConversation(entity)))
+                    .orElse(null);
+        }
         if (conversation == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "La conversacion no existe.");
         }
@@ -202,6 +245,13 @@ public class AIChatService {
                 text,
                 Instant.now()
         );
+    }
+
+    private ChatConversation createConversationWithGreeting(String conversationId, AuthenticatedChatUser user) {
+        ChatConversation conversation = new ChatConversation(conversationId, user);
+        conversation.addMessage(createAssistantMessage(conversationId, INITIAL_GREETING));
+        persistConversation(conversation);
+        return conversation;
     }
 
     private void broadcastAssistantPending(ChatConversation conversation) {
@@ -292,12 +342,13 @@ public class AIChatService {
         String lastMessageAt = conversation.lastMessageAt() == null
                 ? null
                 : conversation.lastMessageAt().toString();
+        String lastMessagePreview = buildLastMessagePreview(conversation);
 
         return new ChatConversationSummaryDto(
                 conversation.id(),
                 title,
                 counterpartUsername,
-                conversation.lastMessagePreview(),
+                lastMessagePreview,
                 lastMessageAt,
                 conversation.unreadCountFor(viewer)
         );
@@ -310,9 +361,104 @@ public class AIChatService {
                 message.authorType(),
                 message.authorUsername(),
                 message.authorLabel(),
-                message.text(),
+                sanitizeMessageText(message),
                 message.sentAt().toString()
         );
+    }
+
+    private List<ChatConversation> loadPersistedConversations() {
+        return chatConversationRepository.findAll().stream()
+                .map(entity -> conversations.computeIfAbsent(entity.getId(), ignored -> toConversation(entity)))
+                .sorted((left, right) -> compareInstants(right.lastMessageAt(), left.lastMessageAt()))
+                .toList();
+    }
+
+    private ChatConversation loadOrCreateConversation(String conversationId, AuthenticatedChatUser user) {
+        return chatConversationRepository.findById(conversationId)
+                .map(this::toConversation)
+                .orElseGet(() -> createConversationWithGreeting(conversationId, user));
+    }
+
+    private void persistConversation(ChatConversation conversation) {
+        chatConversationRepository.save(toEntity(conversation));
+    }
+
+    private ChatConversationEntity toEntity(ChatConversation conversation) {
+        ChatConversationEntity entity = new ChatConversationEntity();
+        entity.setId(conversation.id());
+        entity.setParticipantUid(conversation.participant().uid());
+        entity.setParticipantUsername(conversation.participant().username());
+        entity.setUnreadForOscar(conversation.unreadForOscar());
+        entity.setUnreadForUser(conversation.unreadForUser());
+        entity.setLastMessageAt(conversation.lastMessageAt());
+        entity.setMessages(new ArrayList<>(conversation.snapshotMessages().stream()
+                .map(this::toStoredMessage)
+                .toList()));
+        return entity;
+    }
+
+    private StoredChatMessageEmbeddable toStoredMessage(ChatMessage message) {
+        StoredChatMessageEmbeddable storedMessage = new StoredChatMessageEmbeddable();
+        storedMessage.setId(message.id());
+        storedMessage.setAuthorType(message.authorType());
+        storedMessage.setAuthorUsername(message.authorUsername());
+        storedMessage.setAuthorLabel(message.authorLabel());
+        storedMessage.setText(message.text());
+        storedMessage.setSentAt(message.sentAt());
+        return storedMessage;
+    }
+
+    private ChatConversation toConversation(ChatConversationEntity entity) {
+        List<ChatMessage> messages = entity.getMessages().stream()
+                .map(storedMessage -> toModelMessage(entity.getId(), storedMessage))
+                .toList();
+
+        return new ChatConversation(
+                entity.getId(),
+                new AuthenticatedChatUser(entity.getParticipantUid(), entity.getParticipantUsername()),
+                messages,
+                entity.getUnreadForOscar(),
+                entity.getUnreadForUser(),
+                entity.getLastMessageAt()
+        );
+    }
+
+    private ChatMessage toModelMessage(String conversationId, StoredChatMessageEmbeddable storedMessage) {
+        String text = "assistant".equalsIgnoreCase(storedMessage.getAuthorType())
+                ? assistantTextSanitizer.sanitize(storedMessage.getText())
+                : storedMessage.getText();
+
+        return new ChatMessage(
+                storedMessage.getId(),
+                conversationId,
+                storedMessage.getAuthorType(),
+                storedMessage.getAuthorUsername(),
+                storedMessage.getAuthorLabel(),
+                text,
+                storedMessage.getSentAt()
+        );
+    }
+
+    private String buildLastMessagePreview(ChatConversation conversation) {
+        List<ChatMessage> messages = conversation.snapshotMessages();
+        if (messages.isEmpty()) {
+            return "";
+        }
+
+        String preview = sanitizeMessageText(messages.getLast());
+        if (preview.length() <= 90) {
+            return preview;
+        }
+
+        return preview.substring(0, 87) + "...";
+    }
+
+    private String sanitizeMessageText(ChatMessage message) {
+        if ("assistant".equalsIgnoreCase(message.authorType())) {
+            return assistantTextSanitizer.sanitize(message.text());
+        }
+
+        return message.text();
     }
 
     private void sendEvent(WebSocketSession session, Map<String, Object> payload) {
