@@ -57,6 +57,12 @@ APP_VERIFY_EMAIL_BACKEND_URL=http://localhost:8080/auth/verify-email
 APP_VERIFY_EMAIL_SUCCESS_URL=http://localhost:3000/demos/1?emailVerified=1
 APP_VERIFY_EMAIL_ERROR_URL=http://localhost:3000/demos/1?emailVerifyError=1
 
+# ── Usuario seed (admin por defecto) ───────────────────
+# Se crea automáticamente al arrancar si no existe.
+SEED_USERNAME=tu_usuario_admin
+SEED_EMAIL=admin@tudominio.com
+SEED_PASSWORD=tu_password_segura
+
 # ── DeepSeek (opcional, solo para el chat con IA) ──────
 APP_DEEPSEEK_API_KEY=sk-...
 APP_DEEPSEEK_BASE_URL=https://api.deepseek.com
@@ -128,6 +134,9 @@ src/
 | `APP_VERIFY_EMAIL_BACKEND_URL` | No | URL backend para verificar email (default: localhost) |
 | `APP_VERIFY_EMAIL_SUCCESS_URL` | No | URL frontend tras verificación correcta |
 | `APP_VERIFY_EMAIL_ERROR_URL` | No | URL frontend tras error de verificación |
+| `SEED_USERNAME` | Sí | Username del usuario admin creado al arrancar |
+| `SEED_EMAIL` | Sí | Email del usuario admin creado al arrancar |
+| `SEED_PASSWORD` | Sí | Password del usuario admin creado al arrancar |
 | `APP_DEEPSEEK_API_KEY` | No | Clave DeepSeek para el chat con IA |
 | `APP_DEEPSEEK_BASE_URL` | No | Base URL de DeepSeek (default: `https://api.deepseek.com`) |
 | `APP_DEEPSEEK_MODEL` | No | Modelo DeepSeek a usar (default: `deepseek-chat`) |
