@@ -1,0 +1,27 @@
+services:
+  backend:
+    build: .
+    env_file:
+      - .env
+    environment:
+      SERVER_PORT: "3000"
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:-jdbc:postgresql://host.docker.internal:5432/portfolioBackend_DB}
+      APP_VERIFY_EMAIL_BACKEND_URL: ${APP_VERIFY_EMAIL_BACKEND_URL:-http://localhost:3000/auth/verify-email}
+      APP_VERIFY_EMAIL_SUCCESS_URL: ${APP_VERIFY_EMAIL_SUCCESS_URL:-https://oscarpelegrina.com/demos/1?emailVerified=1}
+      APP_VERIFY_EMAIL_ERROR_URL: ${APP_VERIFY_EMAIL_ERROR_URL:-https://oscarpelegrina.com/demos/1?emailVerifyError=1}
+    ports:
+      - "3000:3000"
+    restart: always
+
+  cloudflared:
+    image: cloudflare/cloudflared:2026.2.0
+    depends_on:
+      - backend
+    command:
+      - tunnel
+      - --no-autoupdate
+      - run
+      - --token
+      - ${CLOUDFLARE_TUNNEL_TOKEN:?Set CLOUDFLARE_TUNNEL_TOKEN in .env}
+    restart: always

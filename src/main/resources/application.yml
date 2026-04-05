@@ -30,8 +30,18 @@ spring:
       "[mail.smtp.timeout]": 5000
       "[mail.smtp.writetimeout]": 5000
 
+management:
+  endpoints:
+    web:
+      base-path: /
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never
+
 security:
-  permit-all: /auth/login,/auth/register,/auth/forgot-password,/auth/reset-password,/auth/verify-email,/auth/verify-email/request,/actuator/health,/actuator/info
+  permit-all: /auth/login,/auth/register,/auth/forgot-password,/auth/reset-password,/auth/verify-email,/auth/verify-email/request,/health,/info
 
 app:
   jwt:
@@ -45,7 +55,11 @@ app:
     replyTo: ${MAIL_REPLY_TO:}
   notifications:
     owner-email: ${APP_OWNER_NOTIFICATION_EMAIL:oscarpear99@gmail.com}
+  seed:
+    username: ${SEED_USERNAME}
+    email: ${SEED_EMAIL}
+    password: ${SEED_PASSWORD}
   verify-email:
     backend-verify-url: ${APP_VERIFY_EMAIL_BACKEND_URL:http://localhost:8080/auth/verify-email}
-    frontend-success-url: ${APP_VERIFY_EMAIL_SUCCESS_URL:http://localhost:3000/demos/1?emailVerified=1}
-    frontend-error-url: ${APP_VERIFY_EMAIL_ERROR_URL:http://localhost:3000/demos/1?emailVerifyError=1}
+    frontend-success-url: ${APP_VERIFY_EMAIL_SUCCESS_URL:https://oscarpelegrina.com/demos/1?emailVerified=1}
+    frontend-error-url: ${APP_VERIFY_EMAIL_ERROR_URL:https://oscarpelegrina.com/demos/1?emailVerifyError=1}
