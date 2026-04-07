@@ -41,7 +41,7 @@ management:
       show-details: never
 
 security:
-  permit-all: /auth/login,/auth/register,/auth/forgot-password,/auth/reset-password,/auth/verify-email,/auth/verify-email/request,/health,/info
+  permit-all: /auth/login,/auth/register,/auth/forgot-password,/auth/reset-password,/auth/verify-email,/auth/verify-email/request,/health,/info,/contact
 
 app:
   jwt:

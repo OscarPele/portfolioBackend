@@ -45,6 +45,25 @@ public class OwnerAlertService {
         sendAsync(subject, html);
     }
 
+    public void notifyContactForm(String name, String email, String message) {
+        String subject = "Nuevo mensaje de contacto: " + safe(name);
+        String html = """
+                <h2>Nuevo mensaje desde el portfolio</h2>
+                <ul>
+                  <li><strong>Nombre:</strong> %s</li>
+                  <li><strong>Email:</strong> %s</li>
+                </ul>
+                <p><strong>Mensaje:</strong></p>
+                <blockquote style="margin:0;padding:12px 16px;border-left:4px solid #d1d5db;background:#f8fafc;">%s</blockquote>
+                """.formatted(
+                escapeHtml(safe(name)),
+                escapeHtml(safe(email)),
+                escapeHtml(safe(message))
+        );
+
+        sendAsync(subject, html);
+    }
+
     public void notifyChatMessage(long userId, String messageText) {
         CompletableFuture.runAsync(() -> {
             try {
