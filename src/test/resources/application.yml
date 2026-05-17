@@ -8,12 +8,8 @@ spring:
     console:
       enabled: true
   jpa:
-    database-platform: org.hibernate.dialect.H2Dialect
     hibernate:
       ddl-auto: create-drop
-    properties:
-      hibernate.default_schema: portfolioBackend_schema
-      hibernate.hbm2ddl.create_namespaces: true
     open-in-view: false
     show-sql: false
   mail:
@@ -35,5 +31,4 @@ app:
     frontend-error-url: http://localhost:3000/verify-error
   password-reset:
     expiration-minutes: 30
-
 

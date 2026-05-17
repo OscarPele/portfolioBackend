@@ -1,23 +1,21 @@
 # portfolioBackend
 
-Backend del portfolio de Òscar Pelegrina, construido con **Spring Boot 3** y **Java 23**.
+Backend del portfolio y del proyecto ERP, construido con **Spring Boot 3** y **Java 23**.
 
-Expone una API REST con autenticación JWT, CRUD de tareas, chat en tiempo real con IA y documentación OpenAPI/Swagger.
+Expone una API REST centrada en autenticacion JWT, verificacion de email, reset de password, formulario de contacto y notificaciones por correo.
 
 ---
 
 ## Stack
 
-| Capa | Tecnología |
+| Capa | Tecnologia |
 |---|---|
-| Framework | Spring Boot 3.4, Spring Security, Spring WebSocket |
-| Autenticación | JWT (OAuth2 Resource Server) |
-| Base de datos | PostgreSQL (producción) · H2 en memoria (tests) |
+| Framework | Spring Boot 3.4, Spring Security, Spring Web |
+| Autenticacion | JWT (OAuth2 Resource Server) |
+| Base de datos | PostgreSQL (produccion) · H2 en memoria (tests) |
 | ORM | Spring Data JPA / Hibernate |
-| Documentación | springdoc-openapi (Swagger UI en `/swagger-ui.html`) |
 | Mail | Spring Mail · Gmail SMTP |
-| IA | DeepSeek API |
-| Tests | JUnit 5 · Mockito · MockMvc · H2 |
+| Tests | JUnit 5 · H2 |
 | Build | Maven 3 |
 
 ---
@@ -27,124 +25,94 @@ Expone una API REST con autenticación JWT, CRUD de tareas, chat en tiempo real 
 - Java 23+
 - Maven 3.9+
 - PostgreSQL 15+ (instancia local o remota)
-- Cuenta de Gmail con una [contraseña de aplicación](https://support.google.com/accounts/answer/185833) de 16 dígitos
-- (Opcional) Clave de API de [DeepSeek](https://platform.deepseek.com/) si quieres usar el chat con IA
+- Cuenta de Gmail con una contrasena de aplicacion de 16 digitos
 
 ---
 
-## Configuración
+## Configuracion
 
-Crea un fichero `.env` en la raíz del proyecto con las variables siguientes.  
-La aplicación lo carga automáticamente en perfil `dev` y `prod`.
+Crea un fichero `.env` en la raiz del proyecto con las variables siguientes.
+La aplicacion lo carga automaticamente en perfil `dev` y `prod`.
 
 ```properties
-# ── Base de datos ──────────────────────────────────────
+# Base de datos
 DB_USER=tu_usuario_postgres
 DB_PASSWORD=tu_password_postgres
 
-# ── JWT ────────────────────────────────────────────────
+# JWT
 # Cadena Base64 de al menos 256 bits (32 bytes).
 # Puedes generarla con: openssl rand -base64 32
 APP_JWT_SECRET=tu_secreto_base64
 
-# ── Gmail SMTP ─────────────────────────────────────────
+# Gmail SMTP
 MAIL_USERNAME=tu_cuenta@gmail.com
-MAIL_PASSWORD=xxxx_xxxx_xxxx_xxxx   # contraseña de aplicación (16 dígitos)
+MAIL_PASSWORD=xxxx_xxxx_xxxx_xxxx
 
-# ── URLs de verificación de email ──────────────────────
-# Ajusta a tu dominio si despliegas en producción.
+# URLs de verificacion de email
 APP_VERIFY_EMAIL_BACKEND_URL=http://localhost:8080/auth/verify-email
-APP_VERIFY_EMAIL_SUCCESS_URL=http://localhost:3000/demos/1?emailVerified=1
-APP_VERIFY_EMAIL_ERROR_URL=http://localhost:3000/demos/1?emailVerifyError=1
+APP_VERIFY_EMAIL_SUCCESS_URL=http://localhost:3000/proyecto?emailVerified=1
+APP_VERIFY_EMAIL_ERROR_URL=http://localhost:3000/proyecto?emailVerifyError=1
 
-# ── Usuario seed (admin por defecto) ───────────────────
-# Se crea automáticamente al arrancar si no existe.
-SEED_USERNAME=tu_usuario_admin
-SEED_EMAIL=admin@tudominio.com
-SEED_PASSWORD=tu_password_segura
-
-# ── DeepSeek (opcional, solo para el chat con IA) ──────
-APP_DEEPSEEK_API_KEY=sk-...
-APP_DEEPSEEK_BASE_URL=https://api.deepseek.com
-APP_DEEPSEEK_MODEL=deepseek-chat
+# Notificaciones al propietario
+APP_OWNER_NOTIFICATION_EMAIL=tu_email@dominio.com
 ```
 
-> El fichero `.env` ya está en `.gitignore`. No lo subas al repositorio.
+> El fichero `.env` esta en `.gitignore`. No lo subas al repositorio.
 
 ---
 
 ## Lanzar en local
 
 ```bash
-# 1. Clona el repositorio
-git clone https://github.com/OscarPele/portfolioBackend.git
-cd portfolioBackend
-
-# 2. Crea el fichero .env con tus variables (ver sección anterior)
-
-# 3. Arranca con el perfil dev (carga el .env automáticamente)
 mvn spring-boot:run
 ```
 
-La API queda disponible en `http://localhost:8080`.  
-Swagger UI en `http://localhost:8080/swagger-ui.html`.
+La API queda disponible en `http://localhost:8080`.
 
 ---
 
-## Ejecutar los tests
+## Ejecutar tests
 
 Los tests usan H2 en memoria, no necesitan PostgreSQL ni `.env`.
 
 ```bash
-# Todos los tests
 mvn test
-
-# Solo los tests del CRUD de tareas
-mvn -Dtest="TaskServiceTest,TaskCreateControllerTest,TaskGetAllControllerTest,TaskUpdateControllerTest,TaskDeleteControllerTest" test
 ```
 
 ---
 
 ## Estructura del proyecto
 
-```
+```text
 src/
 ├── main/java/com/portfolioBackend/
-│   ├── auth/           # Registro, login, verificación de email, reset de password
-│   ├── CRUD/           # CRUD de tareas + documentación OpenAPI
-│   │   └── dto/        # DTOs de request/response y errores
-│   ├── AIChat/         # Chat en tiempo real con WebSocket + DeepSeek
-│   ├── config/         # OpenApiConfig
+│   ├── auth/           # Registro, login, verificacion de email y reset de password
+│   ├── contact/        # Formulario de contacto del portfolio
+│   ├── notifications/  # Avisos por email al propietario
 │   └── security/       # SecurityConfig, JWTService, JwtUtils
-└── test/java/com/portfolioBackend/
-    └── CRUD/           # Tests unitarios (Mockito) e integración (MockMvc)
+└── test/
+    └── ...
 ```
 
 ---
 
-## Variables de entorno — referencia completa
+## Variables de entorno
 
-| Variable | Obligatoria | Descripción |
+| Variable | Obligatoria | Descripcion |
 |---|---|---|
-| `DB_USER` | Sí | Usuario de PostgreSQL |
-| `DB_PASSWORD` | Sí | Password de PostgreSQL |
-| `APP_JWT_SECRET` | Sí | Secreto Base64 para firmar los JWT |
-| `MAIL_USERNAME` | Sí | Cuenta Gmail para envío de emails |
-| `MAIL_PASSWORD` | Sí | Contraseña de aplicación Gmail (16 dígitos) |
-| `APP_VERIFY_EMAIL_BACKEND_URL` | No | URL backend para verificar email (default: localhost) |
-| `APP_VERIFY_EMAIL_SUCCESS_URL` | No | URL frontend tras verificación correcta |
-| `APP_VERIFY_EMAIL_ERROR_URL` | No | URL frontend tras error de verificación |
-| `SEED_USERNAME` | Sí | Username del usuario admin creado al arrancar |
-| `SEED_EMAIL` | Sí | Email del usuario admin creado al arrancar |
-| `SEED_PASSWORD` | Sí | Password del usuario admin creado al arrancar |
-| `APP_DEEPSEEK_API_KEY` | No | Clave DeepSeek para el chat con IA |
-| `APP_DEEPSEEK_BASE_URL` | No | Base URL de DeepSeek (default: `https://api.deepseek.com`) |
-| `APP_DEEPSEEK_MODEL` | No | Modelo DeepSeek a usar (default: `deepseek-chat`) |
+| `DB_USER` | Si | Usuario de PostgreSQL |
+| `DB_PASSWORD` | Si | Password de PostgreSQL |
+| `APP_JWT_SECRET` | Si | Secreto Base64 para firmar los JWT |
+| `MAIL_USERNAME` | Si | Cuenta Gmail para envio de emails |
+| `MAIL_PASSWORD` | Si | Contrasena de aplicacion Gmail |
+| `APP_VERIFY_EMAIL_BACKEND_URL` | No | URL backend para verificar email |
+| `APP_VERIFY_EMAIL_SUCCESS_URL` | No | URL frontend tras verificacion correcta |
+| `APP_VERIFY_EMAIL_ERROR_URL` | No | URL frontend tras error de verificacion |
+| `APP_OWNER_NOTIFICATION_EMAIL` | No | Email que recibe avisos de registro y contacto |
 
 ---
 
 ## Notas
 
-- La base de datos se crea y migra automáticamente con `ddl-auto: update`. No hay scripts SQL que ejecutar manualmente.
+- La base de datos se crea y actualiza automaticamente con `ddl-auto: update`.
 - El schema de Hibernate se llama `portfolioBackend_schema`. Puedes cambiarlo en `application.yml`.
-- Sin `APP_DEEPSEEK_API_KEY`, el módulo de chat simplemente no conectará con la IA, pero el resto de la aplicación funciona con normalidad.
