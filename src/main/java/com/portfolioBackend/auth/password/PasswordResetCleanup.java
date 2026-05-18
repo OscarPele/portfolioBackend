@@ -8,6 +8,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 
+/**
+ * Tarea programada que limpia tokens de recuperacion no reutilizables.
+ */
 @Service
 public class PasswordResetCleanup {
     private static final Logger log = LoggerFactory.getLogger(PasswordResetCleanup.class);
@@ -15,7 +18,9 @@ public class PasswordResetCleanup {
 
     public PasswordResetCleanup(PasswordResetTokenRepository repo) { this.repo = repo; }
 
-    /** Cada hora (zona Madrid). */
+    /**
+     * Ejecuta la limpieza cada hora en la zona de Madrid.
+     */
     @Transactional
     @Scheduled(cron = "0 0 * * * *", zone = "Europe/Madrid")
     public void clean() {

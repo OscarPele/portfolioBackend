@@ -4,6 +4,9 @@ import com.portfolioBackend.notifications.OwnerAlertService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * Recibe mensajes del formulario de contacto del portfolio.
+ */
 @RestController
 @RequestMapping("/contact")
 public class ContactController {
@@ -14,6 +17,9 @@ public class ContactController {
         this.ownerAlertService = ownerAlertService;
     }
 
+    /**
+     * Valida campos minimos y envia el aviso al propietario.
+     */
     @PostMapping
     public ResponseEntity<Void> contact(@RequestBody ContactRequest request) {
         String name    = request.name()    == null ? "" : request.name().trim();

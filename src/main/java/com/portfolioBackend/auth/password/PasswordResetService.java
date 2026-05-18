@@ -14,11 +14,14 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Base64;
 
+/**
+ * Gestiona la emision y consumo de tokens de recuperacion de contrasena.
+ */
 @Service
 @Transactional
 public class PasswordResetService {
 
-    private final PasswordResetTokenRepository repo;     // lo creamos después
+    private final PasswordResetTokenRepository repo;
     private final UserService userService;
     private final int expirationMinutes;
     private final SecureRandom random = new SecureRandom();
@@ -31,7 +34,9 @@ public class PasswordResetService {
         this.expirationMinutes = expirationMinutes;
     }
 
-    /** Solicita reset: siempre 204 en el controller. No revela si el email existe. */
+    /**
+     * Solicita un reset sin revelar si el email pertenece a una cuenta.
+     */
     public void requestReset(String email) {
         userService.findByEmailIgnoreCase(email).ifPresent(user -> {
             // invalidar solicitudes previas del usuario (simple: borrar)
@@ -46,12 +51,14 @@ public class PasswordResetService {
             prt.setExpiresAt(Instant.now().plus(Duration.ofMinutes(expirationMinutes)));
             repo.save(prt);
 
-            // Aquí enviarías el email con el "plain"
+            // Aqui se enviaria el email con el token plano.
             // e.g., mailService.sendPasswordReset(user.getEmail(), plain);
         });
     }
 
-    /** Aplica el cambio de contraseña usando un token de un solo uso. */
+    /**
+     * Aplica el cambio de contrasena usando un token de un solo uso.
+     */
     public void reset(String tokenPlain, String newPassword) {
         String hash = sha256Url(tokenPlain);
         var prt = repo.findByTokenHashFetchUser(hash)

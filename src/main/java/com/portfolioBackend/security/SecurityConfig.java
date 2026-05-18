@@ -24,6 +24,9 @@ import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
 
+/**
+ * Configura seguridad stateless, JWT, CORS y codificacion de contrasenas.
+ */
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
@@ -38,6 +41,9 @@ public class SecurityConfig {
         this.jwtSecretB64 = jwtSecretB64;
     }
 
+    /**
+     * Define las reglas HTTP publicas y protegidas de la API.
+     */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
@@ -60,6 +66,9 @@ public class SecurityConfig {
         return http.build();
     }
 
+    /**
+     * CORS permitido para entornos locales y dominios publicos del portfolio.
+     */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration cfg = new CorsConfiguration();
@@ -88,12 +97,18 @@ public class SecurityConfig {
         return source;
     }
 
+    /**
+     * Decodificador JWT que valida la firma HMAC compartida.
+     */
     @Bean
     public JwtDecoder jwtDecoder() {
         byte[] key = Base64.getDecoder().decode(jwtSecretB64);
         return NimbusJwtDecoder.withSecretKey(new SecretKeySpec(key, "HmacSHA256")).build();
     }
 
+    /**
+     * Encoder BCrypt usado para almacenar contrasenas.
+     */
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();

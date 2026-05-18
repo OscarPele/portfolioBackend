@@ -6,6 +6,9 @@ import java.time.Instant;
 
 import com.portfolioBackend.auth.user.User;
 
+/**
+ * Token persistido para activar cuentas mediante correo electronico.
+ */
 @Entity
 @Table(name = "email_verification_tokens",
         indexes = @Index(name = "idx_evt_user", columnList = "user_id"))
@@ -18,7 +21,9 @@ public class EmailVerificationToken {
     @JoinColumn(name = "user_id", nullable = false, foreignKey = @ForeignKey(name = "fk_evt_user"))
     private User user;
 
-    /** Hash del token (Base64Url de SHA-256). */
+    /**
+     * Hash del token plano (Base64Url de SHA-256).
+     */
     @Column(nullable = false, unique = true, length = 64)
     private String tokenHash;
 
@@ -31,12 +36,22 @@ public class EmailVerificationToken {
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
 
+    /**
+     * Fija la fecha de creacion antes de guardar el token.
+     */
     @PrePersist
     protected void onCreate() {
         if (this.createdAt == null) this.createdAt = Instant.now();
     }
 
+    /**
+     * Indica si el token ya fue consumido.
+     */
     public boolean isUsed()    { return usedAt != null; }
+
+    /**
+     * Indica si el token ya paso su fecha de caducidad.
+     */
     public boolean isExpired() { return Instant.now().isAfter(expiresAt); }
 
     // getters/setters

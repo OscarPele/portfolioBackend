@@ -7,6 +7,9 @@ import java.util.concurrent.CompletableFuture;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+/**
+ * Envia avisos internos al propietario del portfolio.
+ */
 @Service
 public class OwnerAlertService {
 
@@ -21,6 +24,9 @@ public class OwnerAlertService {
         this.ownerEmail = ownerEmail;
     }
 
+    /**
+     * Notifica que se ha registrado un usuario nuevo.
+     */
     public void notifyNewRegistration(User user) {
         String subject = "Nuevo registro en el ERP: @" + safe(user.getUsername());
         String html = """
@@ -41,6 +47,9 @@ public class OwnerAlertService {
         sendAsync(subject, html);
     }
 
+    /**
+     * Notifica un mensaje recibido desde el formulario de contacto.
+     */
     public void notifyContactForm(String name, String email, String message) {
         String subject = "Nuevo mensaje de contacto: " + safe(name);
         String html = """

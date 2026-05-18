@@ -15,6 +15,9 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Base64;
 
+/**
+ * Gestiona tokens y correos de verificacion de cuenta.
+ */
 @Service
 public class EmailVerificationService {
 
@@ -46,7 +49,9 @@ public class EmailVerificationService {
         this.frontendErrorUrl = frontendErrorUrl;
     }
 
-    /** Enviar (o reenviar) verificación al usuario (idempotente). */
+    /**
+     * Envia o reenvia la verificacion al usuario de forma idempotente.
+     */
     @Transactional
     public void send(User u) {
         tokens.deleteByUser_IdAndUsedAtIsNull(u.getId());
@@ -75,7 +80,9 @@ public class EmailVerificationService {
         mail.send(u.getEmail(), "Verifica tu correo", html);
     }
 
-    /** Confirma token (modo API). Lanza códigos para tu AuthExceptionHandler. */
+    /**
+     * Confirma un token en modo API y lanza codigos para el manejador global.
+     */
     @Transactional
     public void confirm(String plainToken) {
         String hash = sha256(plainToken);
@@ -95,7 +102,9 @@ public class EmailVerificationService {
         tokens.deleteByUser_IdAndUsedAtIsNull(u.getId());
     }
 
-    /** Confirma y devuelve URL de redirección (éxito/error). */
+    /**
+     * Confirma el token y devuelve la URL de redireccion de exito o error.
+     */
     @Transactional
     public String confirmAndGetRedirectUrl(String plainToken) {
         String hash = sha256(plainToken);
@@ -153,6 +162,13 @@ public class EmailVerificationService {
         return base + "?token=" + plainToken;
     }
 
+    /**
+     * URL usada tras una verificacion correcta.
+     */
     public String getFrontendSuccessUrl() { return frontendSuccessUrl; }
+
+    /**
+     * URL usada cuando la verificacion no es valida.
+     */
     public String getFrontendErrorUrl() { return frontendErrorUrl; }
 }

@@ -6,6 +6,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
+/**
+ * Centraliza las reglas de registro, autenticacion y cambio de contrasena.
+ */
 @Service
 public class UserService {
     private final UserRepository userRepo;
@@ -18,6 +21,9 @@ public class UserService {
         this.encoder = encoder;
     }
 
+    /**
+     * Crea un usuario nuevo validando que username y email no existan.
+     */
     @Transactional
     public User register(String username, String email, String rawPassword) {
         if (userRepo.existsByUsername(username)) {
@@ -34,6 +40,9 @@ public class UserService {
         return userRepo.save(u);
     }
 
+    /**
+     * Autentica por username o email y exige que el correo este verificado.
+     */
     @Transactional(readOnly = true)
     public User authenticate(String usernameOrEmail, String rawPassword) {
         var user = userRepo.findByUsername(usernameOrEmail)
@@ -50,6 +59,9 @@ public class UserService {
         return user;
     }
 
+    /**
+     * Recupera un usuario por id o lanza USER_NOT_FOUND.
+     */
     @SuppressWarnings("null")
     @Transactional(readOnly = true)
     public User requireById(Long id) {
@@ -57,6 +69,9 @@ public class UserService {
                 .orElseThrow(() -> new RuntimeException("USER_NOT_FOUND"));
     }
 
+    /**
+     * Cambia la contrasena comprobando antes la actual.
+     */
     @Transactional
     public void changePassword(Long id, String currentPassword, String newPassword) {
         var user = requireById(id);
@@ -67,11 +82,17 @@ public class UserService {
         userRepo.save(user);
     }
 
+    /**
+     * Busca usuarios por email ignorando mayusculas y minusculas.
+     */
     @Transactional(readOnly = true)
     public Optional<User> findByEmailIgnoreCase(String email) {
         return userRepo.findByEmailIgnoreCase(email);
     }
 
+    /**
+     * Fuerza una nueva contrasena, usado por el flujo de recuperacion.
+     */
     @Transactional
     public void forceChangePassword(Long userId, String rawPassword) {
         var user = requireById(userId);

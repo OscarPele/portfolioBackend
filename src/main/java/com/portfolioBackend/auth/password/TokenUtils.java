@@ -4,15 +4,24 @@ import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.util.Base64;
 
+/**
+ * Utilidades internas para crear y hashear tokens opacos.
+ */
 final class TokenUtils {
     private static final SecureRandom RNG = new SecureRandom();
 
+    /**
+     * Genera un token URL-safe sin padding.
+     */
     static String newBase64UrlToken() {
         byte[] buf = new byte[32];
         RNG.nextBytes(buf);
         return Base64.getUrlEncoder().withoutPadding().encodeToString(buf);
     }
 
+    /**
+     * Calcula SHA-256 y devuelve el resultado en Base64Url.
+     */
     static String sha256Base64Url(String input) {
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-256");

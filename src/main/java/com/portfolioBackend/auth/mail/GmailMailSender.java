@@ -8,6 +8,9 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
+/**
+ * Implementacion SMTP basada en JavaMail para enviar correos desde Gmail.
+ */
 @Service
 @Primary
 public class GmailMailSender implements MailSenderPort {
@@ -24,6 +27,9 @@ public class GmailMailSender implements MailSenderPort {
         this.replyTo = replyTo == null ? "" : replyTo;
     }
 
+    /**
+     * Construye y envia un mensaje MIME con cuerpo HTML.
+     */
     @SuppressWarnings("null")
     @Override
     public void send(String to, String subject, String htmlBody) {

@@ -7,9 +7,15 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.util.Map;
 
+/**
+ * Traduce codigos de error de dominio a respuestas HTTP estables.
+ */
 @RestControllerAdvice(basePackages = "com.portfolioBackend")
 public class AuthExceptionHandler {
 
+    /**
+     * Devuelve el codigo de error como JSON junto con el estado HTTP adecuado.
+     */
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<Map<String, String>> handleAuthExceptions(RuntimeException ex) {
         String code = ex.getMessage();

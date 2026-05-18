@@ -7,6 +7,9 @@ import org.springframework.web.bind.annotation.*;
 
 import com.portfolioBackend.auth.user.UserService;
 
+/**
+ * Endpoints para solicitar y consumir enlaces de verificacion de email.
+ */
 @RestController
 @RequestMapping("/auth")
 public class EmailVerificationController {
@@ -19,6 +22,9 @@ public class EmailVerificationController {
         this.users = users;
     }
 
+    /**
+     * Reenvia el email de verificacion si la cuenta existe y sigue pendiente.
+     */
     @PostMapping("/verify-email/request")
     public ResponseEntity<Void> request(@RequestBody VerifyEmailRequest body) {
         users.findByEmailIgnoreCase(body.email()).ifPresent(u -> {
@@ -27,11 +33,17 @@ public class EmailVerificationController {
         return ResponseEntity.noContent().build();
     }
 
+    /**
+     * Verifica el token y redirige al frontend con el resultado.
+     */
     @GetMapping("/verify-email")
     public ResponseEntity<Void> verify(@RequestParam("token") String token) {
         String redirectTo = verification.confirmAndGetRedirectUrl(token);
         return ResponseEntity.status(302).header("Location", redirectTo).build();
     }
 
+    /**
+     * Peticion para reenviar la verificacion de email.
+     */
     public record VerifyEmailRequest(@NotBlank @Email String email) {}
 }

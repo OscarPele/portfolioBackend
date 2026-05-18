@@ -11,6 +11,9 @@ import java.time.Instant;
 import java.util.Base64;
 import java.util.Map;
 
+/**
+ * Genera JWT firmados con secreto HMAC para la API.
+ */
 @Service
 public class JWTService {
 
@@ -28,6 +31,9 @@ public class JWTService {
         this.issuer = issuer;
     }
 
+    /**
+     * Crea un token para el usuario con claims adicionales opcionales.
+     */
     public String generate(String username, Map<String, Object> extraClaims) {
         Instant now = Instant.now();
         JwtClaimsSet.Builder b = JwtClaimsSet.builder()
@@ -43,5 +49,8 @@ public class JWTService {
         )).getTokenValue();
     }
 
+    /**
+     * Duracion configurada del token en segundos.
+     */
     public long getExpirationSeconds() { return expirationSeconds; }
 }

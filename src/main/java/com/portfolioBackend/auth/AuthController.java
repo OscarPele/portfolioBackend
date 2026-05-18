@@ -15,6 +15,9 @@ import static com.portfolioBackend.security.JwtUtils.getUid;
 
 import java.util.Map;
 
+/**
+ * Expone las operaciones de autenticacion y gestion de credenciales.
+ */
 @RestController
 @RequestMapping("/auth")
 public class AuthController {
@@ -37,6 +40,9 @@ public class AuthController {
         this.jwtService = jwtService;
     }
 
+    /**
+     * Registra un usuario y dispara los avisos de verificacion y alta.
+     */
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody Map<String, String> body) {
         var user = userService.register(body.get("username"), body.get("email"), body.get("password"));
@@ -55,6 +61,9 @@ public class AuthController {
         ));
     }
 
+    /**
+     * Autentica al usuario y devuelve un JWT de acceso.
+     */
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody Map<String, String> body) {
         var user = userService.authenticate(body.get("usernameOrEmail"), body.get("password"));
@@ -66,23 +75,35 @@ public class AuthController {
         ));
     }
 
+    /**
+     * Endpoint reservado para cerrar sesiones emitidas por el cliente.
+     */
     @PostMapping("/logout-all")
     public ResponseEntity<Void> logoutAll() {
         return ResponseEntity.noContent().build();
     }
 
+    /**
+     * Inicia el flujo de recuperacion sin revelar si el email existe.
+     */
     @PostMapping("/forgot-password")
     public ResponseEntity<Void> forgotPassword(@RequestBody Map<String, String> body) {
         passwordResetService.requestReset(body.getOrDefault("email", ""));
         return ResponseEntity.noContent().build();
     }
 
+    /**
+     * Cambia la contraseña usando un token de recuperacion valido.
+     */
     @PostMapping("/reset-password")
     public ResponseEntity<Void> resetPassword(@RequestBody Map<String, String> body) {
         passwordResetService.reset(body.get("token"), body.get("newPassword"));
         return ResponseEntity.noContent().build();
     }
 
+    /**
+     * Permite al usuario autenticado actualizar su propia contraseña.
+     */
     @PutMapping("/users/me/password")
     public ResponseEntity<Void> changeOwnPassword(
             @AuthenticationPrincipal Jwt jwt,

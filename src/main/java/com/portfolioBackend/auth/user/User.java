@@ -5,6 +5,9 @@ import jakarta.persistence.*;
 
 import java.time.Instant;
 
+/**
+ * Usuario registrado en la aplicacion.
+ */
 @Entity
 @Table(name = "users", uniqueConstraints = {
         @UniqueConstraint(name = "uk_users_username", columnNames = "username"),
@@ -38,6 +41,9 @@ public class User {
     @Column(nullable = false)
     private Instant updatedAt;
 
+    /**
+     * Inicializa las marcas temporales antes de guardar el usuario.
+     */
     @PrePersist
     protected void onCreate() {
         var now = Instant.now();
@@ -45,6 +51,9 @@ public class User {
         this.updatedAt = now;
     }
 
+    /**
+     * Actualiza la fecha de modificacion en cada cambio persistido.
+     */
     @PreUpdate
     protected void onUpdate() {
         this.updatedAt = Instant.now();

@@ -6,6 +6,9 @@ import java.time.Instant;
 
 import com.portfolioBackend.auth.user.User;
 
+/**
+ * Token persistido para recuperar contrasenas de usuario.
+ */
 @Entity
 @Table(name = "password_reset_tokens",
         indexes = {
@@ -36,6 +39,9 @@ public class PasswordResetToken {
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
 
+    /**
+     * Fija la fecha de creacion al persistir el token.
+     */
     @PrePersist
     void onCreate() {
         if (createdAt == null) {
